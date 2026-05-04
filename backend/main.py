@@ -5,7 +5,7 @@ from pathlib import Path
 from datetime import datetime, timezone
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 app = FastAPI(title="Phishing Email Detector")
 
@@ -13,7 +13,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_methods=["POST", "GET"],
-    allow_headers=["*"],
+    allow_headers=["Content-Type"],
 )
 
 MODELS_DIR    = Path(__file__).parent / "models"
@@ -26,8 +26,12 @@ _sgd_path = MODELS_DIR / "sgd_model.pkl"
 _lr_path  = MODELS_DIR / "lr_model.pkl"
 
 if _sgd_path.exists():
-    model = joblib.load(_sgd_path)
-    incremental = True
+    try:
+        model = joblib.load(_sgd_path)
+        incremental = True
+    except Exception:
+        model = joblib.load(_lr_path)
+        incremental = False
 elif _lr_path.exists():
     model = joblib.load(_lr_path)
     incremental = False
@@ -46,12 +50,12 @@ def clean_text(text: str) -> str:
 
 
 class EmailRequest(BaseModel):
-    text: str
+    text: str = Field(..., min_length=1, max_length=50_000)
 
 
 class FeedbackRequest(BaseModel):
-    text: str
-    correct_label: str  # "phishing" or "legitimate"
+    text: str = Field(..., min_length=1, max_length=50_000)
+    correct_label: str = Field(..., pattern="^(phishing|legitimate)$")
 
 
 @app.get("/health")
@@ -80,9 +84,6 @@ def predict(req: EmailRequest):
 
 @app.post("/feedback")
 def feedback(req: FeedbackRequest):
-    if req.correct_label not in ("phishing", "legitimate"):
-        raise HTTPException(status_code=400, detail="correct_label must be 'phishing' or 'legitimate'")
-
     # Persist feedback
     entry = {
         "text":  req.text,
