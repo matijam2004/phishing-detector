@@ -15,11 +15,10 @@
       --text:          #f1f5f9;
       --text-muted:    rgba(255,255,255,0.4);
       --text-dim:      rgba(255,255,255,0.2);
-      --accent:        #6366f1;
       --danger:        #ef4444;
-      --danger-light:  rgba(239,68,68,0.15);
+      --danger-light:  rgba(239,68,68,0.12);
       --success:       #22c55e;
-      --success-light: rgba(34,197,94,0.15);
+      --success-light: rgba(34,197,94,0.12);
     }
 
     html, body {
@@ -27,53 +26,16 @@
       font-family: 'Inter', sans-serif;
       color: var(--text);
       overflow-x: hidden;
+      background: #07070f;
     }
 
-    /* ── Animated background ── */
-    body { background: #060612; }
-
-    .bg {
+    /* ── Canvas background ── */
+    #bg-canvas {
       position: fixed;
       inset: 0;
       z-index: 0;
-    }
-
-    .bg-mesh {
-      position: absolute;
-      inset: 0;
-      background:
-        radial-gradient(ellipse 80% 60% at 20% 30%, rgba(99,102,241,0.22) 0%, transparent 60%),
-        radial-gradient(ellipse 60% 80% at 80% 70%, rgba(139,92,246,0.18) 0%, transparent 60%),
-        radial-gradient(ellipse 70% 50% at 60% 10%, rgba(6,182,212,0.12) 0%, transparent 55%),
-        radial-gradient(ellipse 50% 70% at 10% 80%, rgba(59,130,246,0.14) 0%, transparent 55%);
-      animation: meshDrift 12s ease-in-out infinite alternate;
-    }
-
-    .bg-mesh-2 {
-      position: absolute;
-      inset: 0;
-      background:
-        radial-gradient(ellipse 60% 50% at 70% 40%, rgba(168,85,247,0.12) 0%, transparent 55%),
-        radial-gradient(ellipse 80% 60% at 30% 70%, rgba(99,102,241,0.1) 0%, transparent 60%);
-      animation: meshDrift 16s ease-in-out infinite alternate-reverse;
-    }
-
-    @keyframes meshDrift {
-      0%   { transform: translate(0, 0) scale(1); }
-      33%  { transform: translate(30px, -20px) scale(1.03); }
-      66%  { transform: translate(-20px, 30px) scale(0.97); }
-      100% { transform: translate(20px, 10px) scale(1.02); }
-    }
-
-    /* Subtle grid overlay */
-    .bg::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px);
-      background-size: 60px 60px;
+      width: 100%;
+      height: 100%;
     }
 
     /* ── Layout ── */
@@ -99,7 +61,7 @@
       font-weight: 700;
       letter-spacing: -0.04em;
       line-height: 1.1;
-      background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.5) 100%);
+      background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.45) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -119,9 +81,9 @@
       background: var(--glass-bg);
       border: 1px solid var(--glass-border);
       border-radius: 20px;
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.02), 0 32px 64px rgba(0,0,0,0.4);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.02), 0 32px 64px rgba(0,0,0,0.5);
       overflow: hidden;
     }
 
@@ -141,7 +103,7 @@
     textarea {
       width: 100%;
       height: 190px;
-      background: rgba(0,0,0,0.25);
+      background: rgba(0,0,0,0.3);
       border: 1px solid var(--glass-border);
       border-radius: 12px;
       padding: 14px 16px;
@@ -197,12 +159,10 @@
       box-shadow: none;
     }
 
-    .btn svg { width: 15px; height: 15px; }
-
     .spinner {
       display: none;
       width: 16px; height: 16px;
-      border: 2px solid rgba(255,255,255,0.2);
+      border: 2px solid rgba(255,255,255,0.25);
       border-top-color: #fff;
       border-radius: 50%;
       animation: spin 0.6s linear infinite;
@@ -233,7 +193,6 @@
     .divider {
       height: 1px;
       background: var(--glass-border);
-      margin: 0;
     }
 
     /* ── Result ── */
@@ -254,20 +213,6 @@
       gap: 16px;
       margin-bottom: 20px;
     }
-
-    .verdict-icon {
-      width: 44px; height: 44px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-
-    .verdict-icon svg { width: 20px; height: 20px; }
-
-    .verdict-icon.danger  { background: var(--danger-light);  border: 1px solid rgba(239,68,68,0.2); }
-    .verdict-icon.success { background: var(--success-light); border: 1px solid rgba(34,197,94,0.2); }
 
     .verdict-text { flex: 1; }
 
@@ -295,8 +240,8 @@
       border-radius: 6px;
     }
 
-    .verdict-badge.danger  { background: var(--danger-light);  color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
-    .verdict-badge.success { background: var(--success-light); color: #4ade80; border: 1px solid rgba(34,197,94,0.2); }
+    .verdict-badge.danger  { background: var(--danger-light);  color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
+    .verdict-badge.success { background: var(--success-light); color: #4ade80; border: 1px solid rgba(34,197,94,0.25); }
 
     /* Bars */
     .bar-row {
@@ -359,21 +304,15 @@
 </head>
 <body>
 
-  <!-- Animated background -->
-  <div class="bg">
-    <div class="bg-mesh"></div>
-    <div class="bg-mesh-2"></div>
-  </div>
+  <canvas id="bg-canvas"></canvas>
 
   <div class="page">
 
-    <!-- Header -->
     <div class="header">
       <h1>Email Threat Detection</h1>
       <p class="header-sub">Paste any email — the model classifies it instantly using machine learning.</p>
     </div>
 
-    <!-- Card -->
     <div class="card">
       <div class="card-body">
         <label class="field-label" for="emailInput">Email content</label>
@@ -382,9 +321,6 @@
           placeholder="Paste the full email here — subject, sender, body..."
         ></textarea>
         <button class="btn" id="analyzeBtn" onclick="analyze()">
-          <svg id="btnIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
           <span id="btnText">Analyze Email</span>
           <div class="spinner" id="spinner"></div>
         </button>
@@ -396,7 +332,6 @@
 
       <div class="result-panel" id="resultPanel">
         <div class="result-top">
-          <div class="verdict-icon" id="verdictIcon"></div>
           <div class="verdict-text">
             <div class="verdict-label" id="verdictLabel"></div>
             <div class="verdict-conf" id="verdictConf"></div>
@@ -421,6 +356,91 @@
   </div>
 
   <script>
+    /* ── Particle network background ── */
+    (function () {
+      const canvas = document.getElementById("bg-canvas");
+      const ctx    = canvas.getContext("2d");
+
+      let W, H, particles;
+
+      const COUNT      = 90;
+      const MAX_DIST   = 140;
+      const SPEED      = 0.35;
+      const COLOR_A    = [99, 102, 241];   // indigo
+      const COLOR_B    = [139, 92,  246];  // violet
+      const COLOR_C    = [6,  182, 212];   // cyan
+
+      function lerp(a, b, t) { return a + (b - a) * t; }
+      function lerpColor(c1, c2, t) {
+        return [lerp(c1[0], c2[0], t), lerp(c1[1], c2[1], t), lerp(c1[2], c2[2], t)];
+      }
+
+      function resize() {
+        W = canvas.width  = window.innerWidth;
+        H = canvas.height = window.innerHeight;
+      }
+
+      function makeParticle() {
+        const t  = Math.random();
+        const c  = t < 0.5 ? lerpColor(COLOR_A, COLOR_B, t * 2) : lerpColor(COLOR_B, COLOR_C, (t - 0.5) * 2);
+        return {
+          x:  Math.random() * W,
+          y:  Math.random() * H,
+          vx: (Math.random() - 0.5) * SPEED,
+          vy: (Math.random() - 0.5) * SPEED,
+          r:  Math.random() * 1.5 + 0.5,
+          c,
+        };
+      }
+
+      function init() {
+        resize();
+        particles = Array.from({ length: COUNT }, makeParticle);
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, W, H);
+
+        for (let i = 0; i < particles.length; i++) {
+          const p = particles[i];
+
+          p.x += p.vx;
+          p.y += p.vy;
+          if (p.x < 0 || p.x > W) p.vx *= -1;
+          if (p.y < 0 || p.y > H) p.vy *= -1;
+
+          for (let j = i + 1; j < particles.length; j++) {
+            const q  = particles[j];
+            const dx = p.x - q.x;
+            const dy = p.y - q.y;
+            const d  = Math.sqrt(dx * dx + dy * dy);
+            if (d > MAX_DIST) continue;
+
+            const alpha = (1 - d / MAX_DIST) * 0.35;
+            const mc    = lerpColor(p.c, q.c, 0.5);
+            ctx.beginPath();
+            ctx.strokeStyle = `rgba(${mc[0]|0},${mc[1]|0},${mc[2]|0},${alpha})`;
+            ctx.lineWidth   = 0.8;
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(q.x, q.y);
+            ctx.stroke();
+          }
+
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${p.c[0]|0},${p.c[1]|0},${p.c[2]|0},0.7)`;
+          ctx.fill();
+        }
+
+        requestAnimationFrame(draw);
+      }
+
+      window.addEventListener("resize", () => { resize(); });
+      init();
+      draw();
+    })();
+
+    /* ── App logic ── */
     const API = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
       ? "http://localhost:8000"
       : "https://phishing-detector-b32k.onrender.com";
@@ -429,7 +449,6 @@
       const text     = document.getElementById("emailInput").value.trim();
       const btn      = document.getElementById("analyzeBtn");
       const btnText  = document.getElementById("btnText");
-      const btnIcon  = document.getElementById("btnIcon");
       const spinner  = document.getElementById("spinner");
       const errorBox = document.getElementById("errorBox");
       const panel    = document.getElementById("resultPanel");
@@ -443,7 +462,6 @@
 
       btn.disabled          = true;
       btnText.textContent   = "Analyzing...";
-      btnIcon.style.display = "none";
       spinner.style.display = "block";
 
       try {
@@ -461,7 +479,6 @@
       } finally {
         btn.disabled          = false;
         btnText.textContent   = "Analyze Email";
-        btnIcon.style.display = "block";
         spinner.style.display = "none";
       }
     }
@@ -469,11 +486,6 @@
     function showResult(data) {
       const isPhishing = data.label === "phishing";
       const cls        = isPhishing ? "danger" : "success";
-
-      document.getElementById("verdictIcon").className = `verdict-icon ${cls}`;
-      document.getElementById("verdictIcon").innerHTML = isPhishing
-        ? `<svg viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`
-        : `<svg viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
 
       document.getElementById("verdictLabel").className   = `verdict-label ${cls}`;
       document.getElementById("verdictLabel").textContent = isPhishing ? "Phishing Detected" : "Legitimate Email";
