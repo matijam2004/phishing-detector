@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+backend/feedback.json
+.vscode/
