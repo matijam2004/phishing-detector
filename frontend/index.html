@@ -3,171 +3,381 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Phishing Email Detector</title>
+  <title>PhishGuard — Email Threat Detector</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    body {
+    :root {
+      --glass-bg:      rgba(255,255,255,0.04);
+      --glass-border:  rgba(255,255,255,0.08);
+      --glass-hover:   rgba(255,255,255,0.07);
+      --text:          #f1f5f9;
+      --text-muted:    rgba(255,255,255,0.4);
+      --text-dim:      rgba(255,255,255,0.2);
+      --accent:        #6366f1;
+      --accent-light:  rgba(99,102,241,0.15);
+      --danger:        #ef4444;
+      --danger-light:  rgba(239,68,68,0.15);
+      --success:       #22c55e;
+      --success-light: rgba(34,197,94,0.15);
+    }
+
+    html, body {
       min-height: 100vh;
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* ── Animated background ── */
+    body {
+      background: #020817;
+      position: relative;
+    }
+
+    .bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0;
+      animation: orbFloat linear infinite;
+    }
+
+    .orb-1 {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, #6366f1, transparent 70%);
+      top: -200px; left: -100px;
+      opacity: 0.12;
+      animation-duration: 20s;
+      animation-delay: 0s;
+    }
+
+    .orb-2 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, #06b6d4, transparent 70%);
+      top: 40%; right: -150px;
+      opacity: 0.1;
+      animation-duration: 25s;
+      animation-delay: -8s;
+    }
+
+    .orb-3 {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, #8b5cf6, transparent 70%);
+      bottom: -100px; left: 30%;
+      opacity: 0.1;
+      animation-duration: 18s;
+      animation-delay: -4s;
+    }
+
+    .orb-4 {
+      width: 350px; height: 350px;
+      background: radial-gradient(circle, #3b82f6, transparent 70%);
+      top: 20%; left: 50%;
+      opacity: 0.08;
+      animation-duration: 22s;
+      animation-delay: -12s;
+    }
+
+    @keyframes orbFloat {
+      0%   { transform: translate(0, 0) scale(1); }
+      25%  { transform: translate(40px, -60px) scale(1.05); }
+      50%  { transform: translate(-30px, 40px) scale(0.95); }
+      75%  { transform: translate(60px, 20px) scale(1.02); }
+      100% { transform: translate(0, 0) scale(1); }
+    }
+
+    /* Subtle grid overlay */
+    .bg::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+
+    /* ── Layout ── */
+    .page {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 24px;
+    }
+
+    /* ── Header ── */
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #0f1117;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      color: #e2e8f0;
-      padding: 24px;
     }
 
-    .card {
-      width: 100%;
-      max-width: 680px;
-      background: #1a1d27;
-      border: 1px solid #2d3148;
-      border-radius: 16px;
-      padding: 40px;
-      box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+    .logo-icon svg { width: 18px; height: 18px; }
+
+    .logo-text {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
     }
+
+    .logo-text span { color: #818cf8; }
 
     h1 {
-      font-size: 1.6rem;
+      font-size: clamp(2rem, 5vw, 3.2rem);
       font-weight: 700;
-      margin-bottom: 4px;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.04em;
+      line-height: 1.1;
+      background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.5) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 12px;
     }
 
-    .subtitle {
-      color: #64748b;
-      font-size: 0.9rem;
-      margin-bottom: 32px;
+    .header-sub {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      font-weight: 400;
     }
 
-    label {
-      display: block;
-      font-size: 0.8rem;
+    /* ── Glass card ── */
+    .card {
+      width: 100%;
+      max-width: 620px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.02), 0 32px 64px rgba(0,0,0,0.4);
+      overflow: hidden;
+    }
+
+    .card-body { padding: 28px; }
+
+    /* ── Textarea ── */
+    .field-label {
+      font-size: 0.72rem;
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #94a3b8;
-      margin-bottom: 8px;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      margin-bottom: 10px;
+      display: block;
     }
 
     textarea {
       width: 100%;
-      height: 200px;
-      background: #0f1117;
-      border: 1px solid #2d3148;
-      border-radius: 10px;
+      height: 190px;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
       padding: 14px 16px;
-      color: #e2e8f0;
-      font-size: 0.92rem;
+      color: var(--text);
+      font-size: 0.88rem;
       font-family: inherit;
+      line-height: 1.6;
       resize: vertical;
-      transition: border-color 0.2s;
       outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
 
-    textarea:focus { border-color: #4f6ef7; }
+    textarea:focus {
+      border-color: rgba(99,102,241,0.5);
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+    }
 
-    textarea::placeholder { color: #3d4464; }
+    textarea::placeholder { color: var(--text-dim); }
 
-    button {
-      margin-top: 16px;
+    /* ── Button ── */
+    .btn {
+      margin-top: 14px;
       width: 100%;
-      padding: 14px;
-      background: #4f6ef7;
+      padding: 13px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
       color: #fff;
       border: none;
-      border-radius: 10px;
-      font-size: 1rem;
+      border-radius: 12px;
+      font-size: 0.9rem;
       font-weight: 600;
+      font-family: inherit;
+      letter-spacing: 0.01em;
       cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
+      transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 4px 24px rgba(99,102,241,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
 
-    button:hover  { background: #3b56e0; }
-    button:active { transform: scale(0.98); }
-    button:disabled { background: #2d3148; color: #64748b; cursor: not-allowed; }
+    .btn:hover:not(:disabled) {
+      opacity: 0.9;
+      box-shadow: 0 4px 32px rgba(99,102,241,0.45);
+    }
+
+    .btn:active:not(:disabled) { transform: scale(0.99); }
+
+    .btn:disabled {
+      background: rgba(255,255,255,0.06);
+      color: var(--text-dim);
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .btn svg { width: 15px; height: 15px; }
 
     .spinner {
       display: none;
-      width: 18px; height: 18px;
-      border: 3px solid rgba(255,255,255,0.2);
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.2);
       border-top-color: #fff;
       border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      margin: 0 auto;
+      animation: spin 0.6s linear infinite;
     }
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .result {
-      margin-top: 28px;
-      padding: 24px;
-      border-radius: 12px;
-      display: none;
-      animation: fadeIn 0.3s ease;
+    .hint {
+      text-align: center;
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      margin-top: 10px;
     }
 
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    /* ── Error ── */
+    .error-box {
+      margin-top: 14px;
+      padding: 12px 16px;
+      background: var(--danger-light);
+      border: 1px solid rgba(239,68,68,0.2);
+      border-radius: 10px;
+      font-size: 0.83rem;
+      color: #fca5a5;
+      display: none;
+    }
 
-    .result.phishing  { background: rgba(239,68,68,0.1);  border: 1px solid rgba(239,68,68,0.3); }
-    .result.legitimate{ background: rgba(34,197,94,0.1);  border: 1px solid rgba(34,197,94,0.3); }
+    /* ── Divider ── */
+    .divider {
+      height: 1px;
+      background: var(--glass-border);
+      margin: 0;
+    }
 
-    .result-header {
+    /* ── Result ── */
+    .result-panel {
+      padding: 24px 28px;
+      display: none;
+      animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    .result-top {
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
+      gap: 16px;
+      margin-bottom: 20px;
     }
 
-    .result-icon {
+    .verdict-icon {
+      width: 44px; height: 44px;
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 40px;
-      height: 40px;
-      border-radius: 8px;
       flex-shrink: 0;
     }
 
-    .result.phishing  .result-icon { background: rgba(239,68,68,0.15); }
-    .result.legitimate .result-icon { background: rgba(34,197,94,0.15); }
+    .verdict-icon svg { width: 20px; height: 20px; }
 
-    .result-icon svg { width: 20px; height: 20px; }
+    .verdict-icon.danger  { background: var(--danger-light);  border: 1px solid rgba(239,68,68,0.2); }
+    .verdict-icon.success { background: var(--success-light); border: 1px solid rgba(34,197,94,0.2); }
 
-    .result-label {
-      font-size: 1.3rem;
+    .verdict-text { flex: 1; }
+
+    .verdict-label {
+      font-size: 1.15rem;
       font-weight: 700;
-      text-transform: capitalize;
+      letter-spacing: -0.02em;
+      margin-bottom: 2px;
     }
 
-    .result.phishing  .result-label { color: #f87171; }
-    .result.legitimate .result-label { color: #4ade80; }
+    .verdict-label.danger  { color: #f87171; }
+    .verdict-label.success { color: #4ade80; }
 
-    .result-confidence {
-      font-size: 0.85rem;
-      color: #94a3b8;
-      margin-top: 2px;
+    .verdict-conf {
+      font-size: 0.78rem;
+      color: var(--text-muted);
     }
 
+    .verdict-badge {
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    .verdict-badge.danger  { background: var(--danger-light);  color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+    .verdict-badge.success { background: var(--success-light); color: #4ade80; border: 1px solid rgba(34,197,94,0.2); }
+
+    /* Bars */
     .bar-row {
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-top: 6px;
+      margin-bottom: 10px;
     }
 
-    .bar-label {
-      font-size: 0.78rem;
-      color: #94a3b8;
-      width: 70px;
+    .bar-row:last-child { margin-bottom: 0; }
+
+    .bar-name {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      width: 68px;
       flex-shrink: 0;
+      font-weight: 500;
     }
 
     .bar-track {
       flex: 1;
-      height: 8px;
-      background: #2d3148;
+      height: 5px;
+      background: rgba(255,255,255,0.06);
       border-radius: 99px;
       overflow: hidden;
     }
@@ -175,154 +385,184 @@
     .bar-fill {
       height: 100%;
       border-radius: 99px;
-      transition: width 0.6s cubic-bezier(.4,0,.2,1);
+      transition: width 0.7s cubic-bezier(.4,0,.2,1);
     }
 
-    .bar-fill.phishing-bar  { background: #f87171; }
-    .bar-fill.legit-bar     { background: #4ade80; }
+    .bar-fill.danger  { background: linear-gradient(90deg, #ef4444, #f87171); }
+    .bar-fill.success { background: linear-gradient(90deg, #22c55e, #4ade80); }
 
     .bar-pct {
-      font-size: 0.78rem;
-      color: #94a3b8;
+      font-size: 0.75rem;
+      color: var(--text-muted);
       width: 40px;
       text-align: right;
       flex-shrink: 0;
+      font-variant-numeric: tabular-nums;
     }
 
-    .error {
-      margin-top: 16px;
-      padding: 12px 16px;
-      background: rgba(239,68,68,0.1);
-      border: 1px solid rgba(239,68,68,0.3);
-      border-radius: 8px;
-      font-size: 0.88rem;
-      color: #f87171;
-      display: none;
+    /* ── Footer ── */
+    .footer {
+      margin-top: 28px;
+      text-align: center;
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      letter-spacing: 0.02em;
     }
 
+    @media (max-width: 480px) {
+      .card-body { padding: 20px; }
+      h1 { font-size: 1.8rem; }
+    }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>Phishing Email Detector</h1>
-    <p class="subtitle">Paste an email below — the model will classify it instantly.</p>
 
-    <label for="emailInput">Email text</label>
-    <textarea
-      id="emailInput"
-      placeholder="Paste the full email text here..."
-    ></textarea>
+  <!-- Animated background -->
+  <div class="bg">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="orb orb-4"></div>
+  </div>
 
-    <button id="analyzeBtn" onclick="analyze()">
-      <span id="btnText">Analyze Email</span>
-      <div class="spinner" id="spinner"></div>
-    </button>
+  <div class="page">
 
-    <div class="error" id="errorBox"></div>
-
-    <div class="result" id="result">
-      <div class="result-header">
-        <div class="result-icon" id="resultIcon"></div>
-        <div>
-          <div class="result-label" id="resultLabel"></div>
-          <div class="result-confidence" id="resultConfidence"></div>
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
         </div>
+        <span class="logo-text">Phish<span>Guard</span></span>
       </div>
-
-      <div class="bar-row">
-        <span class="bar-label">Phishing</span>
-        <div class="bar-track">
-          <div class="bar-fill phishing-bar" id="phishingBar" style="width:0%"></div>
-        </div>
-        <span class="bar-pct" id="phishingPct">0%</span>
-      </div>
-
-      <div class="bar-row" style="margin-top:8px">
-        <span class="bar-label">Legitimate</span>
-        <div class="bar-track">
-          <div class="bar-fill legit-bar" id="legitBar" style="width:0%"></div>
-        </div>
-        <span class="bar-pct" id="legitPct">0%</span>
-      </div>
-
+      <h1>Email Threat Detection</h1>
+      <p class="header-sub">Paste any email — the model classifies it instantly using machine learning.</p>
     </div>
+
+    <!-- Card -->
+    <div class="card">
+      <div class="card-body">
+        <label class="field-label" for="emailInput">Email content</label>
+        <textarea
+          id="emailInput"
+          placeholder="Paste the full email here — subject, sender, body..."
+        ></textarea>
+        <button class="btn" id="analyzeBtn" onclick="analyze()">
+          <svg id="btnIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <span id="btnText">Analyze Email</span>
+          <div class="spinner" id="spinner"></div>
+        </button>
+        <p class="hint">Ctrl + Enter to analyze</p>
+        <div class="error-box" id="errorBox"></div>
+      </div>
+
+      <div class="divider" id="divider" style="display:none"></div>
+
+      <div class="result-panel" id="resultPanel">
+        <div class="result-top">
+          <div class="verdict-icon" id="verdictIcon"></div>
+          <div class="verdict-text">
+            <div class="verdict-label" id="verdictLabel"></div>
+            <div class="verdict-conf" id="verdictConf"></div>
+          </div>
+          <div class="verdict-badge" id="verdictBadge"></div>
+        </div>
+
+        <div class="bar-row">
+          <span class="bar-name">Phishing</span>
+          <div class="bar-track"><div class="bar-fill danger" id="phishingBar" style="width:0%"></div></div>
+          <span class="bar-pct" id="phishingPct">0%</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-name">Legitimate</span>
+          <div class="bar-track"><div class="bar-fill success" id="legitBar" style="width:0%"></div></div>
+          <span class="bar-pct" id="legitPct">0%</span>
+        </div>
+      </div>
+    </div>
+
+    <p class="footer">Trained on 82,000+ emails &nbsp;·&nbsp; scikit-learn + FastAPI &nbsp;·&nbsp; CS166 Project</p>
   </div>
 
   <script>
     const API = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
       ? "http://localhost:8000"
       : "https://phishing-detector-b32k.onrender.com";
+
     async function analyze() {
-      const text = document.getElementById("emailInput").value.trim();
-      const btn  = document.getElementById("analyzeBtn");
-      const spinner  = document.getElementById("spinner");
+      const text     = document.getElementById("emailInput").value.trim();
+      const btn      = document.getElementById("analyzeBtn");
       const btnText  = document.getElementById("btnText");
+      const btnIcon  = document.getElementById("btnIcon");
+      const spinner  = document.getElementById("spinner");
       const errorBox = document.getElementById("errorBox");
-      const result   = document.getElementById("result");
+      const panel    = document.getElementById("resultPanel");
+      const divider  = document.getElementById("divider");
 
       errorBox.style.display = "none";
-      result.style.display   = "none";
+      panel.style.display    = "none";
+      divider.style.display  = "none";
 
-      if (!text) {
-        showError("Please paste some email text first.");
-        return;
-      }
+      if (!text) { showError("Please paste some email text first."); return; }
 
-      btn.disabled = true;
-      btnText.style.display = "none";
+      btn.disabled          = true;
+      btnText.textContent   = "Analyzing...";
+      btnIcon.style.display = "none";
       spinner.style.display = "block";
 
       try {
-        const res  = await fetch(`${API}/predict`, {
+        const res = await fetch(`${API}/predict`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text }),
         });
-
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.detail || "Server error");
-        }
-
-        const data = await res.json();
-        showResult(data);
+        if (!res.ok) { const e = await res.json(); throw new Error(e.detail || "Server error"); }
+        showResult(await res.json());
       } catch (e) {
-        if (e.name === "TypeError") {
-          showError("Could not reach the backend. Make sure the server is running on port 8000.");
-        } else {
-          showError(e.message);
-        }
+        showError(e.name === "TypeError"
+          ? "Could not reach the backend. Make sure the server is running."
+          : e.message);
       } finally {
-        btn.disabled = false;
-        btnText.style.display = "block";
+        btn.disabled          = false;
+        btnText.textContent   = "Analyze Email";
+        btnIcon.style.display = "block";
         spinner.style.display = "none";
       }
     }
 
     function showResult(data) {
       const isPhishing = data.label === "phishing";
-      const result = document.getElementById("result");
+      const cls        = isPhishing ? "danger" : "success";
 
-      result.className = `result ${data.label}`;
-      document.getElementById("resultIcon").innerHTML = isPhishing
+      document.getElementById("verdictIcon").className = `verdict-icon ${cls}`;
+      document.getElementById("verdictIcon").innerHTML = isPhishing
         ? `<svg viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`
         : `<svg viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
-      document.getElementById("resultLabel").textContent = data.label;
-      document.getElementById("resultConfidence").textContent =
-        `Confidence: ${data.confidence}%`;
+
+      document.getElementById("verdictLabel").className   = `verdict-label ${cls}`;
+      document.getElementById("verdictLabel").textContent = isPhishing ? "Phishing Detected" : "Legitimate Email";
+      document.getElementById("verdictConf").textContent  = `Confidence: ${data.confidence}%`;
+
+      document.getElementById("verdictBadge").className   = `verdict-badge ${cls}`;
+      document.getElementById("verdictBadge").textContent = isPhishing ? "High Risk" : "Safe";
 
       document.getElementById("phishingBar").style.width = data.phishing_probability + "%";
       document.getElementById("legitBar").style.width    = data.legitimate_probability + "%";
       document.getElementById("phishingPct").textContent = data.phishing_probability + "%";
       document.getElementById("legitPct").textContent    = data.legitimate_probability + "%";
 
-      result.style.display = "block";
+      document.getElementById("divider").style.display    = "block";
+      document.getElementById("resultPanel").style.display = "block";
     }
 
     function showError(msg) {
       const box = document.getElementById("errorBox");
-      box.textContent    = msg;
-      box.style.display  = "block";
+      box.textContent   = msg;
+      box.style.display = "block";
     }
 
     document.getElementById("emailInput").addEventListener("keydown", e => {
