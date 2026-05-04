@@ -24,7 +24,9 @@
       font-family: 'Inter', sans-serif;
       color: var(--text);
       overflow-x: hidden;
-      background: #000;
+      background:
+        radial-gradient(circle at top right, #1f355f 0%, transparent 45%),
+        linear-gradient(180deg, #0b1220 0%, #02050d 100%);
     }
 
     #bg-canvas {
@@ -40,6 +42,10 @@
       inset: 0;
       overflow-y: auto;
       z-index: 1;
+    }
+
+    .page-inner {
+      min-height: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -299,6 +305,7 @@
   <canvas id="bg-canvas"></canvas>
 
   <div class="page">
+  <div class="page-inner">
     <div class="header">
       <h1>Email Threat Detection</h1>
       <p class="header-sub">Paste any email and the model classifies it instantly using machine learning.</p>
@@ -341,12 +348,13 @@
 
     <p class="footer">Trained on 82,000+ emails &mdash; scikit-learn + FastAPI &mdash; CS166 Project</p>
   </div>
+  </div>
 
   <script>
     /* ── Exact star-field shader from cemalturkcan.com, ported to plain WebGL ── */
     (function () {
       const canvas = document.getElementById("bg-canvas");
-      const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+      const gl = canvas.getContext("webgl", { alpha: true }) || canvas.getContext("experimental-webgl", { alpha: true });
       if (!gl) return;
 
       const VS = `
@@ -369,7 +377,7 @@
 
         float Star(vec2 uv, float flare) {
           float d = length(uv);
-          float m = .05 / d;
+          float m = .1 / d;
           float rays = max(0., 1. - abs(uv.x * uv.y * 500.));
           m += rays * flare;
           rays = max(0., 1. - abs(uv.x * uv.y * 1000.));
@@ -425,6 +433,7 @@
           }
 
           gl_FragColor = vec4(col, 1.0);
+          gl_FragColor.a = .3;
         }
       `;
 
@@ -440,6 +449,9 @@
       gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FS));
       gl.linkProgram(prog);
       gl.useProgram(prog);
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      gl.clearColor(0, 0, 0, 0);
 
       const buf = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, buf);
@@ -465,9 +477,10 @@
 
       function frame() {
         const t = (performance.now() - start) / 1000;
+        gl.clear(gl.COLOR_BUFFER_BIT);
         gl.uniform3f(uRes, W, H, 1);
         gl.uniform1f(uTime, t);
-        gl.uniform4f(uMouse, W / 2, H / 2, 0, 0);
+        gl.uniform4f(uMouse, 0, 0, 0, 0);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
         requestAnimationFrame(frame);
       }
