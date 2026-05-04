@@ -53,7 +53,7 @@ def predict(req: EmailRequest):
         raise HTTPException(status_code=503, detail="Model is warming up — please try again in a few seconds.")
 
     if not res.ok:
-        raise HTTPException(status_code=502, detail="Model API returned an error.")
+        raise HTTPException(status_code=502, detail=f"HF API error {res.status_code}: {res.text[:200]}")
 
     data = res.json()
 
