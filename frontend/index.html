@@ -451,7 +451,7 @@
       const uTime  = gl.getUniformLocation(prog, "iTime");
       const uMouse = gl.getUniformLocation(prog, "iMouse");
 
-      let W, H, mx = 0, my = 0, start = performance.now();
+      let W, H, start = performance.now();
 
       function resize() {
         W = canvas.width  = window.innerWidth;
@@ -460,14 +460,13 @@
       }
 
       window.addEventListener("resize", resize);
-      window.addEventListener("mousemove", e => { mx = e.clientX; my = e.clientY; });
       resize();
 
       function frame() {
         const t = (performance.now() - start) / 1000;
         gl.uniform3f(uRes, W, H, 1);
         gl.uniform1f(uTime, t);
-        gl.uniform4f(uMouse, mx, H - my, 0, 0);
+        gl.uniform4f(uMouse, W / 2, H / 2, 0, 0);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
         requestAnimationFrame(frame);
       }
