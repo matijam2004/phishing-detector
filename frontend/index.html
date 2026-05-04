@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PhishGuard — Email Threat Detector</title>
+  <title>Email Threat Detector</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <style>
@@ -12,12 +12,10 @@
     :root {
       --glass-bg:      rgba(255,255,255,0.04);
       --glass-border:  rgba(255,255,255,0.08);
-      --glass-hover:   rgba(255,255,255,0.07);
       --text:          #f1f5f9;
       --text-muted:    rgba(255,255,255,0.4);
       --text-dim:      rgba(255,255,255,0.2);
       --accent:        #6366f1;
-      --accent-light:  rgba(99,102,241,0.15);
       --danger:        #ef4444;
       --danger-light:  rgba(239,68,68,0.15);
       --success:       #22c55e;
@@ -32,68 +30,39 @@
     }
 
     /* ── Animated background ── */
-    body {
-      background: #020817;
-      position: relative;
-    }
+    body { background: #060612; }
 
     .bg {
       position: fixed;
       inset: 0;
       z-index: 0;
-      overflow: hidden;
     }
 
-    .orb {
+    .bg-mesh {
       position: absolute;
-      border-radius: 50%;
-      filter: blur(100px);
-      opacity: 0;
-      animation: orbFloat linear infinite;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 30%, rgba(99,102,241,0.22) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 80% at 80% 70%, rgba(139,92,246,0.18) 0%, transparent 60%),
+        radial-gradient(ellipse 70% 50% at 60% 10%, rgba(6,182,212,0.12) 0%, transparent 55%),
+        radial-gradient(ellipse 50% 70% at 10% 80%, rgba(59,130,246,0.14) 0%, transparent 55%);
+      animation: meshDrift 12s ease-in-out infinite alternate;
     }
 
-    .orb-1 {
-      width: 600px; height: 600px;
-      background: radial-gradient(circle, #6366f1, transparent 70%);
-      top: -200px; left: -100px;
-      opacity: 0.12;
-      animation-duration: 20s;
-      animation-delay: 0s;
+    .bg-mesh-2 {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 70% 40%, rgba(168,85,247,0.12) 0%, transparent 55%),
+        radial-gradient(ellipse 80% 60% at 30% 70%, rgba(99,102,241,0.1) 0%, transparent 60%);
+      animation: meshDrift 16s ease-in-out infinite alternate-reverse;
     }
 
-    .orb-2 {
-      width: 500px; height: 500px;
-      background: radial-gradient(circle, #06b6d4, transparent 70%);
-      top: 40%; right: -150px;
-      opacity: 0.1;
-      animation-duration: 25s;
-      animation-delay: -8s;
-    }
-
-    .orb-3 {
-      width: 400px; height: 400px;
-      background: radial-gradient(circle, #8b5cf6, transparent 70%);
-      bottom: -100px; left: 30%;
-      opacity: 0.1;
-      animation-duration: 18s;
-      animation-delay: -4s;
-    }
-
-    .orb-4 {
-      width: 350px; height: 350px;
-      background: radial-gradient(circle, #3b82f6, transparent 70%);
-      top: 20%; left: 50%;
-      opacity: 0.08;
-      animation-duration: 22s;
-      animation-delay: -12s;
-    }
-
-    @keyframes orbFloat {
+    @keyframes meshDrift {
       0%   { transform: translate(0, 0) scale(1); }
-      25%  { transform: translate(40px, -60px) scale(1.05); }
-      50%  { transform: translate(-30px, 40px) scale(0.95); }
-      75%  { transform: translate(60px, 20px) scale(1.02); }
-      100% { transform: translate(0, 0) scale(1); }
+      33%  { transform: translate(30px, -20px) scale(1.03); }
+      66%  { transform: translate(-20px, 30px) scale(0.97); }
+      100% { transform: translate(20px, 10px) scale(1.02); }
     }
 
     /* Subtle grid overlay */
@@ -102,8 +71,8 @@
       position: absolute;
       inset: 0;
       background-image:
-        linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+        linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px);
       background-size: 60px 60px;
     }
 
@@ -124,33 +93,6 @@
       text-align: center;
       margin-bottom: 40px;
     }
-
-    .logo {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 16px;
-    }
-
-    .logo-icon {
-      width: 36px; height: 36px;
-      background: linear-gradient(135deg, #6366f1, #8b5cf6);
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .logo-icon svg { width: 18px; height: 18px; }
-
-    .logo-text {
-      font-size: 1.1rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      color: var(--text);
-    }
-
-    .logo-text span { color: #818cf8; }
 
     h1 {
       font-size: clamp(2rem, 5vw, 3.2rem);
@@ -419,24 +361,14 @@
 
   <!-- Animated background -->
   <div class="bg">
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
-    <div class="orb orb-3"></div>
-    <div class="orb orb-4"></div>
+    <div class="bg-mesh"></div>
+    <div class="bg-mesh-2"></div>
   </div>
 
   <div class="page">
 
     <!-- Header -->
     <div class="header">
-      <div class="logo">
-        <div class="logo-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-          </svg>
-        </div>
-        <span class="logo-text">Phish<span>Guard</span></span>
-      </div>
       <h1>Email Threat Detection</h1>
       <p class="header-sub">Paste any email — the model classifies it instantly using machine learning.</p>
     </div>
@@ -485,7 +417,7 @@
       </div>
     </div>
 
-    <p class="footer">Trained on 82,000+ emails &nbsp;·&nbsp; scikit-learn + FastAPI &nbsp;·&nbsp; CS166 Project</p>
+    <p class="footer">Trained on 82,000+ emails &nbsp; scikit-learn + FastAPI &nbsp; CS166 Project</p>
   </div>
 
   <script>
