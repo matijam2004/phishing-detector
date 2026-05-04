@@ -67,7 +67,7 @@ def predict(req: EmailRequest):
         lbl = item["label"].upper()
         if lbl in ("LABEL_1", "PHISHING", "1"):
             phishing_prob = item["score"]
-        elif lbl in ("LABEL_0", "LEGITIMATE", "0", "SAFE"):
+        elif lbl in ("LABEL_0", "LEGITIMATE", "0", "SAFE", "BENIGN"):
             legitimate_prob = item["score"]
 
     # Fallback: assume highest score is the prediction
@@ -84,5 +84,4 @@ def predict(req: EmailRequest):
         "confidence":              confidence,
         "phishing_probability":    round(phishing_prob   * 100, 2),
         "legitimate_probability":  round(legitimate_prob * 100, 2),
-        "debug_raw":               scores,
     }
