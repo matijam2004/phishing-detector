@@ -84,4 +84,5 @@ def predict(req: EmailRequest):
         "confidence":              confidence,
         "phishing_probability":    round(phishing_prob   * 100, 2),
         "legitimate_probability":  round(legitimate_prob * 100, 2),
+        "debug_raw":               scores,
     }
