@@ -15,8 +15,8 @@ app.add_middleware(
 )
 
 HF_TOKEN  = os.environ.get("HF_TOKEN", "")
-HF_API    = "https://api-inference.huggingface.co/models/ealvaradob/bert-finetuned-phishing"
-HEADERS   = {"Authorization": f"Bearer {HF_TOKEN}"} if HF_TOKEN else {}
+HF_API    = "https://router.huggingface.co/hf-inference/models/ealvaradob/bert-finetuned-phishing"
+HEADERS   = {"Authorization": f"Bearer {HF_TOKEN}", "Content-Type": "application/json"}
 
 
 def clean_text(text: str) -> str:
