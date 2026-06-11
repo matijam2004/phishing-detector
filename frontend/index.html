@@ -24,15 +24,24 @@
       font-family: 'Inter', sans-serif;
       color: var(--text);
       overflow-x: hidden;
-      background:
-        radial-gradient(circle at top right, #1f355f 0%, transparent 45%),
-        linear-gradient(180deg, #0b1220 0%, #02050d 100%);
+      background: #000;
+    }
+
+    #bg-img {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      opacity: 0.55;
     }
 
     #bg-canvas {
       position: fixed;
       inset: 0;
-      z-index: 0;
+      z-index: 1;
       width: 100%;
       height: 100%;
     }
@@ -41,7 +50,7 @@
       position: fixed;
       inset: 0;
       overflow-y: auto;
-      z-index: 1;
+      z-index: 2;
     }
 
     .page-inner {
@@ -302,6 +311,7 @@
 </head>
 <body>
 
+  <img id="bg-img" src="bg.jpg" alt="" />
   <canvas id="bg-canvas"></canvas>
 
   <div class="page">
