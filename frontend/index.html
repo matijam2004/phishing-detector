@@ -351,179 +351,94 @@
   </div>
 
   <script>
-    /* ── Flowing diagonal lines background ── */
+    /* ── Hacker text rain background ── */
     (function () {
       const canvas = document.getElementById("bg-canvas");
-      const gl = canvas.getContext("webgl", { alpha: true }) || canvas.getContext("experimental-webgl", { alpha: true });
-      if (!gl) return;
+      const ctx    = canvas.getContext("2d");
+      if (!ctx) return;
 
-      const VS = `
-        attribute vec2 a_pos;
-        void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }
-      `;
+      const CHARS = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン" +
+                    "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" +
+                    "@#$%&<>[]{}/?\\|~^*+=";
+      const FS = 14;   /* font size px */
 
-      const FS = `
-        precision highp float;
-        uniform vec3  iResolution;
-        uniform float iTime;
-        uniform float iScanY;
-        uniform float iThreat;
-        uniform float iThreatFade;
+      let W, H, cols = [];
 
-        float hash(float n) { return fract(sin(n) * 43758.5453); }
+      /* shared state: 0=neutral, 1=phishing, -1=safe */
+      window._bg = { threatState: 0 };
 
-        void main() {
-          vec2 uv = gl_FragCoord.xy / iResolution.xy;
-          float aspect = iResolution.x / iResolution.y;
-          vec2 p = vec2(uv.x * aspect, uv.y);
-
-          float angle = 0.22;
-          float cosA = cos(angle), sinA = sin(angle);
-          float along  = p.x * sinA - p.y * cosA;
-          float across = p.x * cosA + p.y * sinA;
-
-          float px = 1.0 / iResolution.x;
-
-          /* rain colour: blue by default, shifts red (phishing) or green (safe) */
-          float threatAmt = (1.0 - iThreatFade);
-          vec3 baseColor = vec3(0.10, 0.65, 0.45);
-          vec3 redColor  = vec3(0.85, 0.15, 0.15);
-          vec3 greenColor= vec3(0.10, 0.80, 0.35);
-          vec3 threatColor = iThreat > 0.5 ? redColor : (iThreat < -0.5 ? greenColor : baseColor);
-          baseColor = mix(baseColor, threatColor, threatAmt);
-
-          vec3 glowColor = mix(vec3(0.50, 1.00, 0.75),
-                               iThreat > 0.5 ? vec3(1.0, 0.5, 0.5) : vec3(0.5, 1.0, 0.65),
-                               threatAmt * step(0.4, abs(iThreat)));
-
-          /* primary layer */
-          float spacing = 40.0 * px * aspect;
-          float col     = floor(across / spacing);
-          float active  = step(0.70, hash(col + 33.1));
-          float speed   = 0.18 + hash(col) * 0.20;
-          float phase   = hash(col + 77.3);
-          float colCenter = (col + 0.5) * spacing;
-          float distPx    = abs(across - colCenter) / px;
-          float needle    = smoothstep(1.8, 0.0, distPx);
-          float fall = fract(along * 1.6 - iTime * speed + phase * 10.0);
-          float drop = needle * smoothstep(0.0, 0.01, fall) * smoothstep(0.18, 0.0, fall) * active;
-          float glowPulse = pow(sin(iTime * (0.35 + hash(col + 44.2) * 0.5) + hash(col) * 40.0) * 0.5 + 0.5, 5.0);
-          float glowDrop  = drop * glowPulse;
-
-          /* secondary layer */
-          float spacing2 = 70.0 * px * aspect;
-          float col2     = floor(across / spacing2);
-          float active2  = step(0.72, hash(col2 + 55.9));
-          float speed2   = 0.12 + hash(col2 + 13.1) * 0.13;
-          float phase2   = hash(col2 + 99.7);
-          float dist2Px  = abs(across - (col2 + 0.5) * spacing2) / px;
-          float needle2  = smoothstep(1.8, 0.0, dist2Px);
-          float fall2    = fract(along * 1.6 - iTime * speed2 + phase2 * 10.0);
-          float drop2    = needle2 * smoothstep(0.0, 0.01, fall2) * smoothstep(0.14, 0.0, fall2) * active2;
-          float glow2    = drop2 * pow(sin(iTime * (0.3 + hash(col2 + 88.1) * 0.4) + hash(col2) * 30.0) * 0.5 + 0.5, 5.0);
-
-          float baseBright = drop  + drop2  * 0.6;
-          float glowBright = glowDrop + glow2 * 0.6;
-
-          /* vignette */
-          vec2 vig = uv - 0.5;
-          float vignette = clamp(1.0 - dot(vig * vec2(1.0, 1.3), vig * vec2(1.0, 1.3)) * 2.0, 0.0, 1.0);
-
-          vec3 rainCol = mix(baseColor, glowColor, glowBright / max(baseBright + glowBright, 0.001));
-          float rainAlpha = (baseBright * 0.45 + glowBright * 0.9) * vignette;
-
-          /* wiper effect: rain above the scan line is cleared */
-          float scanOn = step(0.0, iScanY);
-          /* uv.y=1 is top, iScanY sweeps 1→0; below line = uv.y < iScanY */
-          float belowLine = step(uv.y, iScanY);
-          /* when scan active, mask rain to only below the line */
-          float wipeMask = mix(1.0, belowLine, scanOn);
-          rainAlpha *= wipeMask;
-
-          vec4 out4 = vec4(rainCol, rainAlpha);
-
-          /* scan line glow */
-          float scanDist = abs(uv.y - iScanY);
-          float scanLine = smoothstep(0.0015, 0.0, scanDist) * scanOn;
-          float scanGlow = smoothstep(0.05,   0.0, scanDist) * 0.30 * scanOn;
-          /* bright leading edge glow just below the line */
-          float leadGlow = smoothstep(0.0, 0.03, belowLine * scanOn * (iScanY - uv.y)) * 0.15 * scanOn;
-          vec3  scanColor = vec3(0.55, 0.95, 1.0);
-          out4 += vec4(scanColor, scanLine * 0.95 + scanGlow + leadGlow);
-
-          gl_FragColor = out4;
-        }
-      `;
-
-      function compile(type, src) {
-        const s = gl.createShader(type);
-        gl.shaderSource(s, src);
-        gl.compileShader(s);
-        return s;
+      /* colour definitions per state */
+      function headColor(state) {
+        if (state ===  1) return "rgba(255, 80,  60,  1.0)";
+        if (state === -1) return "rgba(60,  255, 120, 1.0)";
+        return                   "rgba(80,  220, 255, 1.0)";
+      }
+      function trailColor(state, alpha) {
+        if (state ===  1) return `rgba(180, 20,  10,  ${alpha})`;
+        if (state === -1) return `rgba(10,  160, 60,  ${alpha})`;
+        return                   `rgba(10,  140, 200, ${alpha})`;
       }
 
-      const prog = gl.createProgram();
-      gl.attachShader(prog, compile(gl.VERTEX_SHADER, VS));
-      gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FS));
-      gl.linkProgram(prog);
-      gl.useProgram(prog);
-      gl.enable(gl.BLEND);
-      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-      gl.clearColor(0, 0, 0, 0);
-
-      const buf = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
-      const loc = gl.getAttribLocation(prog, "a_pos");
-      gl.enableVertexAttribArray(loc);
-      gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-
-      const uRes        = gl.getUniformLocation(prog, "iResolution");
-      const uTime       = gl.getUniformLocation(prog, "iTime");
-      const uScanY      = gl.getUniformLocation(prog, "iScanY");
-      const uThreat     = gl.getUniformLocation(prog, "iThreat");
-      const uThreatFade = gl.getUniformLocation(prog, "iThreatFade");
-
-      let W, H, start = performance.now();
-
-      /* shared state written by the app, read by the render loop */
-      window._bg = { scanStart: -1, threatState: 0, resultTime: -1, start };
-
-      function resize() {
+      function initCols() {
         W = canvas.width  = window.innerWidth;
         H = canvas.height = window.innerHeight;
-        gl.viewport(0, 0, W, H);
+        const n = Math.floor(W / FS);
+        cols = [];
+        for (let i = 0; i < n; i++) {
+          cols.push({
+            x:      i * FS,
+            y:      Math.random() * H,          /* random initial y */
+            speed:  0.8 + Math.random() * 1.4,  /* chars per frame */
+            state:  0,                           /* colour state */
+            tick:   0,
+          });
+        }
       }
 
-      window.addEventListener("resize", resize);
-      resize();
+      window.addEventListener("resize", initCols);
+      initCols();
+
+      /* called by verdict to pour new colour from the top */
+      window._bg.pour = function (newState) {
+        window._bg.threatState = newState;
+        /* stagger reset: columns cascade left→right with slight random offset */
+        cols.forEach((col, i) => {
+          setTimeout(() => {
+            col.y     = -Math.random() * H * 0.5;   /* start above screen */
+            col.state = newState;
+          }, i * 6 + Math.random() * 80);
+        });
+      };
+
+      function randomChar() {
+        return CHARS[Math.floor(Math.random() * CHARS.length)];
+      }
 
       function frame() {
-        const t   = (performance.now() - start) / 1000;
-        const bg  = window._bg;
+        /* fade trail — semi-transparent black overlay each frame */
+        ctx.fillStyle = "rgba(0, 0, 0, 0.045)";
+        ctx.fillRect(0, 0, W, H);
 
-        /* scan animation: top (1.0) → bottom (0.0) over 1.4s */
-        let scanY = -1.0;
-        if (bg.scanStart >= 0) {
-          const elapsed = t - bg.scanStart;
-          const DUR = 1.4;
-          if (elapsed < DUR) {
-            scanY = 1.0 - elapsed / DUR;
-          } else {
-            bg.scanStart = -1;
+        ctx.font = `${FS}px monospace`;
+
+        for (const col of cols) {
+          /* bright head character */
+          ctx.fillStyle = headColor(col.state);
+          ctx.fillText(randomChar(), col.x, col.y);
+
+          /* slightly dimmer second character for a glow trail feel */
+          ctx.fillStyle = trailColor(col.state, 0.5);
+          ctx.fillText(randomChar(), col.x, col.y - FS);
+
+          col.y += FS * col.speed * 0.3;
+
+          /* reset to top when off screen, pick up current global state */
+          if (col.y > H + FS) {
+            col.y     = -FS * 2;
+            col.state = window._bg.threatState;
           }
         }
 
-        /* threat colour stays permanently until next analysis */
-        const threatFade = 0.0;
-
-        gl.clear(gl.COLOR_BUFFER_BIT);
-        gl.uniform3f(uRes, W, H, 1);
-        gl.uniform1f(uTime, t);
-        gl.uniform1f(uScanY, scanY);
-        gl.uniform1f(uThreat, bg.threatState);
-        gl.uniform1f(uThreatFade, threatFade);
-        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
         requestAnimationFrame(frame);
       }
       frame();
@@ -550,13 +465,8 @@
 
       if (!text) { showError("Please paste some email text first."); return; }
 
-      /* reset colour and trigger scan line sweep */
-      if (window._bg) {
-        const now = (performance.now() - window._bg.start) / 1000;
-        window._bg.scanStart   = now;
-        window._bg.threatState = 0;
-        window._bg.resultTime  = -1;
-      }
+      /* reset to neutral on new analysis */
+      if (window._bg && window._bg.pour) window._bg.pour(0);
 
       btn.disabled          = true;
       btnText.textContent   = "Analyzing...";
@@ -585,11 +495,8 @@
       const isPhishing = data.label === "phishing";
       const cls        = isPhishing ? "danger" : "success";
 
-      /* set background threat colour */
-      if (window._bg) {
-        window._bg.threatState = isPhishing ? 1.0 : -1.0;
-        window._bg.resultTime  = (performance.now() - window._bg.start) / 1000;
-      }
+      /* pour new colour from the top */
+      if (window._bg && window._bg.pour) window._bg.pour(isPhishing ? 1 : -1);
 
       document.getElementById("verdictLabel").className   = `verdict-label ${cls}`;
       document.getElementById("verdictLabel").textContent = isPhishing ? "Phishing Detected" : "Legitimate Email";
