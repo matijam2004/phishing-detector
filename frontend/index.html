@@ -357,9 +357,7 @@
       const ctx    = canvas.getContext("2d");
       if (!ctx) return;
 
-      const CHARS = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン" +
-                    "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" +
-                    "@#$%&<>[]{}/?\\|~^*+=";
+      const CHARS = "0123456789";
       const FS = 14;   /* font size px */
 
       let W, H, cols = [];
@@ -388,7 +386,7 @@
           cols.push({
             x:      i * FS,
             y:      Math.random() * H,          /* random initial y */
-            speed:  0.18 + Math.random() * 0.22,  /* chars per frame */
+            speed:  0.04 + Math.random() * 0.06,  /* chars per frame */
             state:  0,                           /* colour state */
             tick:   0,
           });
