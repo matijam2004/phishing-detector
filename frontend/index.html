@@ -382,32 +382,36 @@
           float across = p.x * cosA + p.y * sinA;   /* stripe spacing axis   */
 
           /* streaks: thin vertical bands spaced across screen */
-          float spacing = 0.022;
+          float spacing = 0.038;
           float band = fract(across / spacing);
-          float streak = smoothstep(0.0, 0.18, band) * smoothstep(1.0, 0.82, band);
+          float streak = smoothstep(0.0, 0.06, band) * smoothstep(1.0, 0.94, band);
 
           /* each band gets a unique speed and length via hash */
           float col   = floor(across / spacing);
-          float speed = 0.55 + hash(col) * 0.9;
+          /* only ~45% of columns have an active drop */
+          float active = step(0.55, hash(col + 33.1));
+          float speed = 0.4 + hash(col) * 0.6;
           float phase = hash(col + 77.3);
 
-          /* falling motion: offset each streak's start point in time */
-          float fall  = fract(along * 1.8 + iTime * speed + phase * 10.0);
+          /* falling motion top-to-bottom: subtract time so drop moves downward */
+          float fall  = fract(along * 1.8 - iTime * speed + phase * 10.0);
 
-          /* streak head — bright tip, fading tail */
-          float head  = smoothstep(0.0, 0.04, fall);
-          float tail  = smoothstep(0.55, 0.0, fall);
-          float drop  = head * tail;
+          /* streak head — bright tip, short fading tail */
+          float head  = smoothstep(0.0, 0.03, fall);
+          float tail  = smoothstep(0.22, 0.0, fall);
+          float drop  = head * tail * active;
 
-          /* secondary faint layer — denser, slower, adds depth */
-          float col2   = floor(across / (spacing * 0.6));
-          float speed2 = 0.3 + hash(col2 + 13.1) * 0.4;
+          /* secondary faint layer — sparser, slower */
+          float spacing2 = spacing * 1.6;
+          float col2   = floor(across / spacing2);
+          float active2 = step(0.62, hash(col2 + 55.9));
+          float speed2 = 0.25 + hash(col2 + 13.1) * 0.3;
           float phase2 = hash(col2 + 99.7);
-          float fall2  = fract(along * 2.4 + iTime * speed2 + phase2 * 10.0);
-          float drop2  = smoothstep(0.0, 0.04, fall2) * smoothstep(0.35, 0.0, fall2) * 0.3;
+          float fall2  = fract(along * 2.0 - iTime * speed2 + phase2 * 10.0);
+          float drop2  = smoothstep(0.0, 0.03, fall2) * smoothstep(0.14, 0.0, fall2) * 0.25 * active2;
 
-          float band2  = fract(across / (spacing * 0.6));
-          float streak2 = smoothstep(0.0, 0.25, band2) * smoothstep(1.0, 0.75, band2);
+          float band2   = fract(across / spacing2);
+          float streak2 = smoothstep(0.0, 0.08, band2) * smoothstep(1.0, 0.92, band2);
 
           float pattern = streak * drop + streak2 * drop2;
 
@@ -421,7 +425,7 @@
           float vignette = 1.0 - dot(vig * vec2(1.0, 1.3), vig * vec2(1.0, 1.3)) * 2.0;
           vignette = clamp(vignette, 0.0, 1.0);
 
-          float alpha = pattern * 0.75 * vignette;
+          float alpha = pattern * 0.55 * vignette;
           gl_FragColor = vec4(lineColor, alpha);
         }
       `;
