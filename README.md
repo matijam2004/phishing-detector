@@ -2,7 +2,7 @@
 
 A machine learning–powered phishing email classifier with a real-time WebGL frontend and a FastAPI backend. Trained on 82,000+ emails, it classifies any email as phishing or legitimate in milliseconds and returns calibrated confidence scores.
 
-**Live demo →** [phishing-detector on Vercel](https://phishing-detector.vercel.app)  
+**Live demo →** [phishing-detector on Vercel](https://phishing-detector-omega-nine.vercel.app/)  
 **Backend API →** [phishing-detector-b32k.onrender.com](https://phishing-detector-b32k.onrender.com)
 
 ---
