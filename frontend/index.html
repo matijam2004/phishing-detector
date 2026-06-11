@@ -381,63 +381,59 @@
           float along  = p.x * sinA - p.y * cosA;   /* falls along this axis */
           float across = p.x * cosA + p.y * sinA;   /* stripe spacing axis   */
 
-          /* very thin streaks, widely spaced */
-          float spacing = 0.055;
-          float band = fract(across / spacing);
-          float streak = smoothstep(0.0, 0.012, band) * smoothstep(1.0, 0.988, band);
+          /* pixel width of one fragment in the across direction */
+          float px = 1.0 / iResolution.x;
 
-          float col   = floor(across / spacing);
-          /* ~30% of columns active */
-          float active = step(0.70, hash(col + 33.1));
-          float speed  = 0.20 + hash(col) * 0.22;
-          float phase  = hash(col + 77.3);
+          /* columns spaced ~40px apart, ~30% active */
+          float spacing = 40.0 * px * aspect;
+          float col     = floor(across / spacing);
+          float active  = step(0.70, hash(col + 33.1));
+          float speed   = 0.18 + hash(col) * 0.20;
+          float phase   = hash(col + 77.3);
 
-          float fall = fract(along * 1.8 - iTime * speed + phase * 10.0);
-          float head = smoothstep(0.0, 0.02, fall);
-          float tail = smoothstep(0.18, 0.0, fall);
-          float drop = head * tail * active;
+          /* 1-2px wide needle — distance from column centre in pixels */
+          float colCenter = (col + 0.5) * spacing;
+          float distPx    = abs(across - colCenter) / px;
+          float needle    = smoothstep(1.8, 0.0, distPx);   /* ~2px wide */
 
-          /* per-column glow: each column occasionally lights up brightly */
-          float glowPulse = sin(iTime * (0.3 + hash(col + 44.2) * 0.6) + hash(col) * 40.0) * 0.5 + 0.5;
-          glowPulse = pow(glowPulse, 5.0);   /* mostly off, sharp flare */
+          /* falling drop: head + tail giving a ~8% screen-height streak */
+          float fall = fract(along * 1.6 - iTime * speed + phase * 10.0);
+          float head = smoothstep(0.0,  0.01, fall);
+          float tail = smoothstep(0.08, 0.0,  fall);         /* length of streak */
+          float drop = needle * head * tail * active;
+
+          /* occasional glow: each column independently flares */
+          float glowPulse = sin(iTime * (0.35 + hash(col + 44.2) * 0.5) + hash(col) * 40.0) * 0.5 + 0.5;
+          glowPulse = pow(glowPulse, 5.0);
           float glowDrop = drop * glowPulse;
 
-          /* secondary sparser layer */
-          float spacing2 = spacing * 2.2;
-          float col2    = floor(across / spacing2);
-          float active2 = step(0.74, hash(col2 + 55.9));
-          float speed2  = 0.13 + hash(col2 + 13.1) * 0.14;
-          float phase2  = hash(col2 + 99.7);
-          float fall2   = fract(along * 2.0 - iTime * speed2 + phase2 * 10.0);
-          float drop2   = smoothstep(0.0, 0.015, fall2) * smoothstep(0.12, 0.0, fall2) * active2;
-          float band2   = fract(across / spacing2);
-          float streak2 = smoothstep(0.0, 0.014, band2) * smoothstep(1.0, 0.986, band2);
+          /* second sparser layer, same treatment */
+          float spacing2  = 70.0 * px * aspect;
+          float col2      = floor(across / spacing2);
+          float active2   = step(0.72, hash(col2 + 55.9));
+          float speed2    = 0.12 + hash(col2 + 13.1) * 0.13;
+          float phase2    = hash(col2 + 99.7);
+          float col2Ctr   = (col2 + 0.5) * spacing2;
+          float dist2Px   = abs(across - col2Ctr) / px;
+          float needle2   = smoothstep(1.8, 0.0, dist2Px);
+          float fall2     = fract(along * 1.6 - iTime * speed2 + phase2 * 10.0);
+          float drop2     = needle2 * smoothstep(0.0, 0.01, fall2) * smoothstep(0.07, 0.0, fall2) * active2;
+          float glow2     = drop2 * pow(sin(iTime * (0.3 + hash(col2 + 88.1) * 0.4) + hash(col2) * 30.0) * 0.5 + 0.5, 5.0);
 
-          float glowPulse2 = sin(iTime * (0.25 + hash(col2 + 88.1) * 0.5) + hash(col2) * 30.0) * 0.5 + 0.5;
-          glowPulse2 = pow(glowPulse2, 5.0);
-          float glowDrop2 = drop2 * glowPulse2 * streak2;
+          vec3 baseColor = vec3(0.20, 0.55, 0.80);
+          vec3 glowColor = vec3(0.75, 0.95, 1.00);
 
-          /* base rain: normal dim colour */
-          vec3 bodyColor = vec3(0.12, 0.38, 0.58);
-          vec3 tipColor  = vec3(0.55, 0.80, 1.00);
-          vec3 glowColor = vec3(0.70, 0.92, 1.00);
-
-          float baseDrop = streak * drop + streak2 * drop2 * 0.5;
-          float totalGlow = streak * glowDrop + glowDrop2;
-
-          vec3 lineColor = mix(bodyColor, tipColor, pow(clamp(drop, 0.0, 1.0), 0.4));
+          float baseBright = (drop + drop2 * 0.6);
+          float glowBright = (glowDrop + glow2 * 0.6);
 
           /* vignette */
           vec2 vig = uv - 0.5;
           float vignette = 1.0 - dot(vig * vec2(1.0, 1.3), vig * vec2(1.0, 1.3)) * 2.0;
           vignette = clamp(vignette, 0.0, 1.0);
 
-          float baseAlpha = baseDrop * 0.40 * vignette;
-          float glowAlpha = totalGlow * 0.85 * vignette;
-
-          vec4 baseOut = vec4(lineColor, baseAlpha);
-          vec4 glowOut = vec4(glowColor, glowAlpha);
-          gl_FragColor = baseOut + glowOut;
+          vec3 col3  = mix(baseColor, glowColor, glowBright / max(baseBright + glowBright, 0.001));
+          float alpha = (baseBright * 0.45 + glowBright * 0.9) * vignette;
+          gl_FragColor = vec4(col3, alpha);
         }
       `;
 
