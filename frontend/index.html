@@ -386,13 +386,13 @@
 
           /* rain colour: blue by default, shifts red (phishing) or green (safe) */
           float threatAmt = (1.0 - iThreatFade);
-          vec3 baseColor = vec3(0.20, 0.55, 0.80);
+          vec3 baseColor = vec3(0.10, 0.65, 0.45);
           vec3 redColor  = vec3(0.85, 0.15, 0.15);
           vec3 greenColor= vec3(0.10, 0.80, 0.35);
           vec3 threatColor = iThreat > 0.5 ? redColor : (iThreat < -0.5 ? greenColor : baseColor);
           baseColor = mix(baseColor, threatColor, threatAmt);
 
-          vec3 glowColor = mix(vec3(0.75, 0.95, 1.00),
+          vec3 glowColor = mix(vec3(0.50, 1.00, 0.75),
                                iThreat > 0.5 ? vec3(1.0, 0.5, 0.5) : vec3(0.5, 1.0, 0.65),
                                threatAmt * step(0.4, abs(iThreat)));
 
@@ -431,15 +431,25 @@
 
           vec3 rainCol = mix(baseColor, glowColor, glowBright / max(baseBright + glowBright, 0.001));
           float rainAlpha = (baseBright * 0.45 + glowBright * 0.9) * vignette;
+
+          /* wiper effect: rain above the scan line is cleared */
+          float scanOn = step(0.0, iScanY);
+          /* uv.y=1 is top, iScanY sweeps 1→0; below line = uv.y < iScanY */
+          float belowLine = step(uv.y, iScanY);
+          /* when scan active, mask rain to only below the line */
+          float wipeMask = mix(1.0, belowLine, scanOn);
+          rainAlpha *= wipeMask;
+
           vec4 out4 = vec4(rainCol, rainAlpha);
 
-          /* scan line: sweeps top→bottom, iScanY in [0,1], -1 = off */
-          float scanOn = step(0.0, iScanY);
+          /* scan line glow */
           float scanDist = abs(uv.y - iScanY);
-          float scanLine = smoothstep(0.002, 0.0, scanDist) * scanOn;
-          float scanGlow = smoothstep(0.06,  0.0, scanDist) * 0.25 * scanOn;
-          vec3  scanColor = mix(vec3(0.4, 0.9, 1.0), vec3(1.0, 0.4, 0.4), step(0.5, iThreat + 0.5) * threatAmt);
-          out4 += vec4(scanColor, scanLine * 0.9 + scanGlow);
+          float scanLine = smoothstep(0.0015, 0.0, scanDist) * scanOn;
+          float scanGlow = smoothstep(0.05,   0.0, scanDist) * 0.30 * scanOn;
+          /* bright leading edge glow just below the line */
+          float leadGlow = smoothstep(0.0, 0.03, belowLine * scanOn * (iScanY - uv.y)) * 0.15 * scanOn;
+          vec3  scanColor = vec3(0.55, 0.95, 1.0);
+          out4 += vec4(scanColor, scanLine * 0.95 + scanGlow + leadGlow);
 
           gl_FragColor = out4;
         }
