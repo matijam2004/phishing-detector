@@ -351,7 +351,7 @@
   </div>
 
   <script>
-    /* ── Exact star-field shader from cemalturkcan.com, ported to plain WebGL ── */
+    /* ── Hex grid pulse background ── */
     (function () {
       const canvas = document.getElementById("bg-canvas");
       const gl = canvas.getContext("webgl", { alpha: true }) || canvas.getContext("experimental-webgl", { alpha: true });
@@ -366,74 +366,81 @@
         precision mediump float;
         uniform vec3  iResolution;
         uniform float iTime;
-        uniform vec4  iMouse;
 
-        #define NUM_LAYERS 4.
+        #define PI 3.14159265
 
-        mat2 Rot(float a) {
-          float s = sin(a), c = cos(a);
-          return mat2(c, -s, s, c);
+        /* axial hex coords from cartesian */
+        vec2 hexGrid(vec2 p, float size) {
+          float w = size * 2.0;
+          float h = size * sqrt(3.0);
+          float col = floor(p.x / (w * 0.75));
+          float offset = mod(col, 2.0) * h * 0.5;
+          float row = floor((p.y - offset) / h);
+          return vec2(col, row);
         }
 
-        float Star(vec2 uv, float flare) {
-          float d = length(uv);
-          float m = .1 / d;
-          float rays = max(0., 1. - abs(uv.x * uv.y * 500.));
-          m += rays * flare;
-          rays = max(0., 1. - abs(uv.x * uv.y * 1000.));
-          m += rays * .3 * flare;
-          m *= smoothstep(1., .2, d);
-          return m;
+        /* distance to nearest hex center */
+        float hexDist(vec2 p, float size) {
+          float w = size * 2.0;
+          float h = size * sqrt(3.0);
+          float col = floor(p.x / (w * 0.75));
+          float offset = mod(col, 2.0) * h * 0.5;
+          float row = floor((p.y - offset) / h);
+
+          vec2 centers[2];
+          centers[0] = vec2(col * w * 0.75 + size, row * h + offset + h * 0.5);
+          float col2 = col + sign(mod(p.x, w * 0.75) - w * 0.375);
+          float offset2 = mod(col2, 2.0) * h * 0.5;
+          float row2 = floor((p.y - offset2) / h);
+          centers[1] = vec2(col2 * w * 0.75 + size, row2 * h + offset2 + h * 0.5);
+
+          float d0 = length(p - centers[0]);
+          float d1 = length(p - centers[1]);
+          return min(d0, d1);
         }
 
-        float Hash21(vec2 p) {
-          p = fract(p * vec2(424.34, 342.21));
-          p += dot(p, p + 34.32);
+        /* cheap hash */
+        float hash(vec2 p) {
+          p = fract(p * vec2(127.1, 311.7));
+          p += dot(p, p + 17.5);
           return fract(p.x * p.y);
         }
 
-        vec3 StarLayer(vec2 uv) {
-          vec3 col = vec3(0);
-          uv *= .04;
-          vec2 gv = fract(uv) - .5;
-          vec2 id = floor(uv);
-          for (int y = -1; y <= 1; y++) {
-            for (int x = -1; x <= 1; x++) {
-              vec2 offs = vec2(x, y);
-              float n    = Hash21(id + offs);
-              float size = fract(n * 345.32);
-              vec2 sp    = gv - offs - vec2(n, fract(n * 34.)) + .5;
-              float star = Star(sp, smoothstep(.85, 1., size));
-              vec3 color = vec3(0.49, 0.808, 0.878) * smoothstep(0.8, 1.0, size);
-              star *= sin(iTime * 2.0 + n * 3.1415) * 0.3 + 0.7;
-              col += star * size * color;
-            }
-          }
-          return col;
-        }
-
         void main() {
-          vec2 fc = gl_FragCoord.xy;
-          vec2 uv = (fc - .5 * iResolution.xy) / iResolution.y;
-          vec2 M  = (iMouse.xy - iResolution.xy * .5) / iResolution.y;
-          float t = iTime * .02;
+          vec2 uv = gl_FragCoord.xy;
+          float SIZE = 44.0;
+          float w = SIZE * 2.0;
+          float h = SIZE * sqrt(3.0);
 
-          uv += -M * 3.;
-          uv *= 2.;
+          /* hex cell id */
+          float col = floor(uv.x / (w * 0.75));
+          float offset = mod(col, 2.0) * h * 0.5;
+          float row = floor((uv.y - offset) / h);
+          vec2 id = vec2(col, row);
 
-          mat2 rot = Rot(t + length(uv));
-          uv *= rot;
+          /* cell center */
+          vec2 center = vec2(col * w * 0.75 + SIZE, row * h + offset + h * 0.5);
+          float dist = length(uv - center);
 
-          vec3 col = vec3(0);
-          for (float i = 0.; i < 1.; i += 1. / NUM_LAYERS) {
-            float depth = fract(i + t);
-            float scale = mix(20., .5, depth);
-            float fade  = depth * smoothstep(1., .9, depth);
-            col += StarLayer(uv * scale + i * 454.23 - M * 3.) * fade;
-          }
+          float n = hash(id);
+          /* each cell pulses at its own rate and phase */
+          float pulse = sin(iTime * (0.4 + n * 0.8) + n * PI * 6.28) * 0.5 + 0.5;
+          pulse = pow(pulse, 3.0);
 
-          gl_FragColor = vec4(col, 1.0);
-          gl_FragColor.a = .3;
+          /* edge glow: bright near hex boundary, dim in center */
+          float edgeDist = SIZE - dist;
+          float edgeGlow = smoothstep(0.0, 6.0, edgeDist) * smoothstep(SIZE * 0.85, SIZE * 0.55, dist);
+
+          /* interior fill: subtle tint when pulsing */
+          float fill = smoothstep(SIZE * 0.9, SIZE * 0.3, dist) * 0.18 * pulse;
+
+          /* color: teal base with occasional blue/purple shift per cell */
+          vec3 teal   = vec3(0.12, 0.72, 0.78);
+          vec3 purple = vec3(0.38, 0.25, 0.82);
+          vec3 cellColor = mix(teal, purple, step(0.7, n));
+
+          float alpha = (edgeGlow * (0.08 + pulse * 0.22) + fill) ;
+          gl_FragColor = vec4(cellColor * alpha, alpha);
         }
       `;
 
@@ -460,9 +467,8 @@
       gl.enableVertexAttribArray(loc);
       gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
 
-      const uRes   = gl.getUniformLocation(prog, "iResolution");
-      const uTime  = gl.getUniformLocation(prog, "iTime");
-      const uMouse = gl.getUniformLocation(prog, "iMouse");
+      const uRes  = gl.getUniformLocation(prog, "iResolution");
+      const uTime = gl.getUniformLocation(prog, "iTime");
 
       let W, H, start = performance.now();
 
@@ -480,7 +486,6 @@
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.uniform3f(uRes, W, H, 1);
         gl.uniform1f(uTime, t);
-        gl.uniform4f(uMouse, 0, 0, 0, 0);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
         requestAnimationFrame(frame);
       }
