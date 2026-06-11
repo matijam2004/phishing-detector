@@ -358,7 +358,7 @@
       if (!ctx) return;
 
       const CHARS = "0123456789";
-      const FS = 14;   /* font size px */
+      const FS = 18;   /* font size px */
 
       let W, H, cols = [];
 
@@ -367,14 +367,14 @@
 
       /* colour definitions per state */
       function headColor(state) {
-        if (state ===  1) return "rgba(255, 80,  60,  1.0)";
-        if (state === -1) return "rgba(60,  255, 120, 1.0)";
-        return                   "rgba(80,  220, 255, 1.0)";
+        if (state ===  1) return "rgba(255, 100, 80,  1.0)";
+        if (state === -1) return "rgba(80,  255, 140, 1.0)";
+        return                   "rgba(160, 240, 255, 1.0)";
       }
       function trailColor(state, alpha) {
-        if (state ===  1) return `rgba(180, 20,  10,  ${alpha})`;
-        if (state === -1) return `rgba(10,  160, 60,  ${alpha})`;
-        return                   `rgba(10,  140, 200, ${alpha})`;
+        if (state ===  1) return `rgba(220, 40,  20,  ${alpha})`;
+        if (state === -1) return `rgba(20,  200, 80,  ${alpha})`;
+        return                   `rgba(40,  180, 230, ${alpha})`;
       }
 
       function initCols() {
@@ -413,11 +413,11 @@
       }
 
       function frame() {
-        /* fade trail — semi-transparent black overlay each frame */
-        ctx.fillStyle = "rgba(0, 0, 0, 0.045)";
+        /* fade trail */
+        ctx.fillStyle = "rgba(0, 0, 0, 0.12)";
         ctx.fillRect(0, 0, W, H);
 
-        ctx.font = `${FS}px monospace`;
+        ctx.font = `bold ${FS}px monospace`;
 
         for (const col of cols) {
           /* bright head character */
