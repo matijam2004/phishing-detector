@@ -367,44 +367,61 @@
         uniform vec3  iResolution;
         uniform float iTime;
 
+        float hash(float n) { return fract(sin(n) * 43758.5453); }
+
         void main() {
           vec2 uv = gl_FragCoord.xy / iResolution.xy;
           float aspect = iResolution.x / iResolution.y;
-          uv.x *= aspect;
+          vec2 p = vec2(uv.x * aspect, uv.y);
 
-          float t = iTime * 0.18;
+          /* rain angle: mostly vertical, slight lean to the right */
+          /* project onto rain axis and perpendicular streak axis  */
+          float angle = 0.22;                        /* radians — gentle lean */
+          float cosA = cos(angle), sinA = sin(angle);
+          float along  = p.x * sinA - p.y * cosA;   /* falls along this axis */
+          float across = p.x * cosA + p.y * sinA;   /* stripe spacing axis   */
 
-          /* diagonal coordinate: project onto the 45-degree axis */
-          float diag = (uv.x + uv.y) * 6.0 - t;
+          /* streaks: thin vertical bands spaced across screen */
+          float spacing = 0.022;
+          float band = fract(across / spacing);
+          float streak = smoothstep(0.0, 0.18, band) * smoothstep(1.0, 0.82, band);
 
-          /* primary lines — thin bright stripes */
-          float lines = abs(fract(diag) - 0.5);
-          float thin  = smoothstep(0.48, 0.44, lines);
+          /* each band gets a unique speed and length via hash */
+          float col   = floor(across / spacing);
+          float speed = 0.55 + hash(col) * 0.9;
+          float phase = hash(col + 77.3);
 
-          /* secondary lines at half spacing — fainter */
-          float diag2  = diag * 2.0 + 0.5;
-          float lines2 = abs(fract(diag2) - 0.5);
-          float thin2  = smoothstep(0.48, 0.45, lines2) * 0.35;
+          /* falling motion: offset each streak's start point in time */
+          float fall  = fract(along * 1.8 + iTime * speed + phase * 10.0);
 
-          float pattern = thin + thin2;
+          /* streak head — bright tip, fading tail */
+          float head  = smoothstep(0.0, 0.04, fall);
+          float tail  = smoothstep(0.55, 0.0, fall);
+          float drop  = head * tail;
 
-          /* slow breathing brightness wave rolling along the lines */
-          float wave = sin((uv.x + uv.y) * 3.0 - iTime * 0.5) * 0.5 + 0.5;
-          wave = pow(wave, 2.5);
+          /* secondary faint layer — denser, slower, adds depth */
+          float col2   = floor(across / (spacing * 0.6));
+          float speed2 = 0.3 + hash(col2 + 13.1) * 0.4;
+          float phase2 = hash(col2 + 99.7);
+          float fall2  = fract(along * 2.4 + iTime * speed2 + phase2 * 10.0);
+          float drop2  = smoothstep(0.0, 0.04, fall2) * smoothstep(0.35, 0.0, fall2) * 0.3;
 
-          /* colour: teal-blue tint matching the card palette */
-          vec3 lineColor = mix(
-            vec3(0.10, 0.28, 0.42),
-            vec3(0.20, 0.55, 0.70),
-            wave
-          );
+          float band2  = fract(across / (spacing * 0.6));
+          float streak2 = smoothstep(0.0, 0.25, band2) * smoothstep(1.0, 0.75, band2);
 
-          /* vignette — edges darker so card stands out */
-          vec2 vig = gl_FragCoord.xy / iResolution.xy - 0.5;
-          float vignette = 1.0 - dot(vig * vec2(1.0, 1.4), vig * vec2(1.0, 1.4)) * 2.2;
+          float pattern = streak * drop + streak2 * drop2;
+
+          /* colour: icy blue-white tips, deeper teal on body */
+          vec3 tipColor  = vec3(0.72, 0.90, 1.00);
+          vec3 bodyColor = vec3(0.15, 0.45, 0.65);
+          vec3 lineColor = mix(bodyColor, tipColor, pow(drop, 0.5));
+
+          /* vignette */
+          vec2 vig = uv - 0.5;
+          float vignette = 1.0 - dot(vig * vec2(1.0, 1.3), vig * vec2(1.0, 1.3)) * 2.0;
           vignette = clamp(vignette, 0.0, 1.0);
 
-          float alpha = pattern * (0.10 + wave * 0.12) * vignette;
+          float alpha = pattern * 0.75 * vignette;
           gl_FragColor = vec4(lineColor, alpha);
         }
       `;
