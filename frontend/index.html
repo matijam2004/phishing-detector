@@ -53,19 +53,12 @@
       background: linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.75) 75%, #000 100%);
     }
 
-    #bg-canvas {
-      position: fixed;
-      inset: 0;
-      z-index: 1;
-      width: 100%;
-      height: 100%;
-    }
 
     .page {
       position: fixed;
       inset: 0;
       overflow-y: auto;
-      z-index: 2;
+      z-index: 1;
     }
 
     .page-inner {
@@ -328,7 +321,6 @@
 
   <img id="bg-img" src="bg.jpg" alt="" />
   <div id="bg-gradient"></div>
-  <canvas id="bg-canvas"></canvas>
 
   <div class="page">
   <div class="page-inner">
@@ -377,96 +369,6 @@
   </div>
 
   <script>
-    /* ── Hacker text rain background ── */
-    (function () {
-      const canvas = document.getElementById("bg-canvas");
-      const ctx    = canvas.getContext("2d");
-      if (!ctx) return;
-
-      const CHARS = "0123456789";
-      const FS = 18;   /* font size px */
-
-      let W, H, cols = [];
-
-      /* shared state: 0=neutral, 1=phishing, -1=safe */
-      window._bg = { threatState: 0 };
-
-      /* colour definitions per state */
-      function headColor(state) {
-        if (state ===  1) return "rgba(255, 100, 80,  1.0)";
-        if (state === -1) return "rgba(80,  255, 140, 1.0)";
-        return                   "rgba(160, 240, 255, 1.0)";
-      }
-      function trailColor(state, alpha) {
-        if (state ===  1) return `rgba(220, 40,  20,  ${alpha})`;
-        if (state === -1) return `rgba(20,  200, 80,  ${alpha})`;
-        return                   `rgba(40,  180, 230, ${alpha})`;
-      }
-
-      function initCols() {
-        W = canvas.width  = window.innerWidth;
-        H = canvas.height = window.innerHeight;
-        const n = Math.floor(W / FS);
-        cols = [];
-        for (let i = 0; i < n; i++) {
-          cols.push({
-            x:      i * FS,
-            y:      Math.random() * H,          /* random initial y */
-            speed:  0.04 + Math.random() * 0.06,  /* chars per frame */
-            state:  0,                           /* colour state */
-            tick:   0,
-          });
-        }
-      }
-
-      window.addEventListener("resize", initCols);
-      initCols();
-
-      /* called by verdict to pour new colour from the top */
-      window._bg.pour = function (newState) {
-        window._bg.threatState = newState;
-        /* stagger reset: columns cascade left→right with slight random offset */
-        cols.forEach((col, i) => {
-          setTimeout(() => {
-            col.y     = -Math.random() * H * 0.5;   /* start above screen */
-            col.state = newState;
-          }, i * 6 + Math.random() * 80);
-        });
-      };
-
-      function randomChar() {
-        return CHARS[Math.floor(Math.random() * CHARS.length)];
-      }
-
-      function frame() {
-        /* fade trail */
-        ctx.fillStyle = "rgba(0, 0, 0, 0.12)";
-        ctx.fillRect(0, 0, W, H);
-
-        ctx.font = `bold ${FS}px monospace`;
-
-        for (const col of cols) {
-          /* bright head character */
-          ctx.fillStyle = headColor(col.state);
-          ctx.fillText(randomChar(), col.x, col.y);
-
-          /* slightly dimmer second character for a glow trail feel */
-          ctx.fillStyle = trailColor(col.state, 0.5);
-          ctx.fillText(randomChar(), col.x, col.y - FS);
-
-          col.y += FS * col.speed * 0.3;
-
-          /* reset to top when off screen, pick up current global state */
-          if (col.y > H + FS) {
-            col.y     = -FS * 2;
-            col.state = window._bg.threatState;
-          }
-        }
-
-        requestAnimationFrame(frame);
-      }
-      frame();
-    })();
 
 
     /* ── App ── */
@@ -489,8 +391,6 @@
 
       if (!text) { showError("Please paste some email text first."); return; }
 
-      /* reset to neutral on new analysis */
-      if (window._bg && window._bg.pour) window._bg.pour(0);
 
       btn.disabled          = true;
       btnText.textContent   = "Analyzing...";
@@ -519,8 +419,6 @@
       const isPhishing = data.label === "phishing";
       const cls        = isPhishing ? "danger" : "success";
 
-      /* pour new colour from the top */
-      if (window._bg && window._bg.pour) window._bg.pour(isPhishing ? 1 : -1);
 
       document.getElementById("verdictLabel").className   = `verdict-label ${cls}`;
       document.getElementById("verdictLabel").textContent = isPhishing ? "Phishing Detected" : "Legitimate Email";
