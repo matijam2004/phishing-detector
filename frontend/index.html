@@ -406,7 +406,7 @@
           float distPx    = abs(across - colCenter) / px;
           float needle    = smoothstep(1.8, 0.0, distPx);
           float fall = fract(along * 1.6 - iTime * speed + phase * 10.0);
-          float drop = needle * smoothstep(0.0, 0.01, fall) * smoothstep(0.08, 0.0, fall) * active;
+          float drop = needle * smoothstep(0.0, 0.01, fall) * smoothstep(0.18, 0.0, fall) * active;
           float glowPulse = pow(sin(iTime * (0.35 + hash(col + 44.2) * 0.5) + hash(col) * 40.0) * 0.5 + 0.5, 5.0);
           float glowDrop  = drop * glowPulse;
 
@@ -419,7 +419,7 @@
           float dist2Px  = abs(across - (col2 + 0.5) * spacing2) / px;
           float needle2  = smoothstep(1.8, 0.0, dist2Px);
           float fall2    = fract(along * 1.6 - iTime * speed2 + phase2 * 10.0);
-          float drop2    = needle2 * smoothstep(0.0, 0.01, fall2) * smoothstep(0.07, 0.0, fall2) * active2;
+          float drop2    = needle2 * smoothstep(0.0, 0.01, fall2) * smoothstep(0.14, 0.0, fall2) * active2;
           float glow2    = drop2 * pow(sin(iTime * (0.3 + hash(col2 + 88.1) * 0.4) + hash(col2) * 30.0) * 0.5 + 0.5, 5.0);
 
           float baseBright = drop  + drop2  * 0.6;
@@ -504,20 +504,8 @@
           }
         }
 
-        /* threat colour fade: hold 2s then fade out over 3s */
-        let threatFade = 0.0;
-        if (bg.resultTime >= 0) {
-          const elapsed = t - bg.resultTime;
-          const HOLD = 2.0, FADE = 3.0;
-          if (elapsed > HOLD) {
-            threatFade = Math.min((elapsed - HOLD) / FADE, 1.0);
-            if (threatFade >= 1.0) {
-              bg.threatState = 0;
-              bg.resultTime  = -1;
-              threatFade     = 0.0;
-            }
-          }
-        }
+        /* threat colour stays permanently until next analysis */
+        const threatFade = 0.0;
 
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.uniform3f(uRes, W, H, 1);
@@ -552,8 +540,13 @@
 
       if (!text) { showError("Please paste some email text first."); return; }
 
-      /* trigger scan line sweep */
-      if (window._bg) { window._bg.scanStart = (performance.now() - window._bg.start) / 1000; }
+      /* reset colour and trigger scan line sweep */
+      if (window._bg) {
+        const now = (performance.now() - window._bg.start) / 1000;
+        window._bg.scanStart   = now;
+        window._bg.threatState = 0;
+        window._bg.resultTime  = -1;
+      }
 
       btn.disabled          = true;
       btnText.textContent   = "Analyzing...";
