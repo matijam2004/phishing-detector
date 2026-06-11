@@ -381,52 +381,79 @@
           float along  = p.x * sinA - p.y * cosA;   /* falls along this axis */
           float across = p.x * cosA + p.y * sinA;   /* stripe spacing axis   */
 
-          /* streaks: thin vertical bands spaced across screen */
-          float spacing = 0.038;
+          /* streaks: very thin bands, widely spaced */
+          float spacing = 0.055;
           float band = fract(across / spacing);
-          float streak = smoothstep(0.0, 0.06, band) * smoothstep(1.0, 0.94, band);
+          float streak = smoothstep(0.0, 0.03, band) * smoothstep(1.0, 0.97, band);
 
-          /* each band gets a unique speed and length via hash */
           float col   = floor(across / spacing);
-          /* only ~45% of columns have an active drop */
-          float active = step(0.55, hash(col + 33.1));
-          float speed = 0.4 + hash(col) * 0.6;
+          /* only ~30% of columns active */
+          float active = step(0.70, hash(col + 33.1));
+          float speed = 0.22 + hash(col) * 0.28;
           float phase = hash(col + 77.3);
 
-          /* falling motion top-to-bottom: subtract time so drop moves downward */
           float fall  = fract(along * 1.8 - iTime * speed + phase * 10.0);
-
-          /* streak head — bright tip, short fading tail */
-          float head  = smoothstep(0.0, 0.03, fall);
-          float tail  = smoothstep(0.22, 0.0, fall);
+          float head  = smoothstep(0.0, 0.02, fall);
+          float tail  = smoothstep(0.16, 0.0, fall);
           float drop  = head * tail * active;
 
-          /* secondary faint layer — sparser, slower */
-          float spacing2 = spacing * 1.6;
-          float col2   = floor(across / spacing2);
-          float active2 = step(0.62, hash(col2 + 55.9));
-          float speed2 = 0.25 + hash(col2 + 13.1) * 0.3;
-          float phase2 = hash(col2 + 99.7);
-          float fall2  = fract(along * 2.0 - iTime * speed2 + phase2 * 10.0);
-          float drop2  = smoothstep(0.0, 0.03, fall2) * smoothstep(0.14, 0.0, fall2) * 0.25 * active2;
-
+          /* secondary sparser layer */
+          float spacing2 = spacing * 2.0;
+          float col2    = floor(across / spacing2);
+          float active2 = step(0.72, hash(col2 + 55.9));
+          float speed2  = 0.15 + hash(col2 + 13.1) * 0.18;
+          float phase2  = hash(col2 + 99.7);
+          float fall2   = fract(along * 2.0 - iTime * speed2 + phase2 * 10.0);
+          float drop2   = smoothstep(0.0, 0.02, fall2) * smoothstep(0.10, 0.0, fall2) * 0.22 * active2;
           float band2   = fract(across / spacing2);
-          float streak2 = smoothstep(0.0, 0.08, band2) * smoothstep(1.0, 0.92, band2);
+          float streak2 = smoothstep(0.0, 0.04, band2) * smoothstep(1.0, 0.96, band2);
 
           float pattern = streak * drop + streak2 * drop2;
 
-          /* colour: icy blue-white tips, deeper teal on body */
-          vec3 tipColor  = vec3(0.72, 0.90, 1.00);
-          vec3 bodyColor = vec3(0.15, 0.45, 0.65);
-          vec3 lineColor = mix(bodyColor, tipColor, pow(drop, 0.5));
+          /* ── glow orbs: a handful of soft circles that pulse in and out ── */
+          float glow = 0.0;
+          vec3 glowColor = vec3(0.0);
+          for (int i = 0; i < 6; i++) {
+            float fi = float(i);
+            /* pseudo-random position per orb */
+            vec2 orbPos = vec2(
+              hash(fi * 3.71 + 1.3),
+              hash(fi * 5.13 + 2.7)
+            );
+            orbPos.x *= aspect;
+            /* slow drift */
+            orbPos += vec2(
+              sin(iTime * 0.08 + fi * 2.1) * 0.04,
+              cos(iTime * 0.06 + fi * 1.7) * 0.03
+            );
+            float dist = length(p - orbPos);
+            /* each orb pulses at its own period */
+            float pulse = sin(iTime * (0.4 + hash(fi + 9.9) * 0.5) + fi * 4.2) * 0.5 + 0.5;
+            pulse = pow(pulse, 4.0);  /* sharp on, mostly off */
+            float radius = 0.12 + hash(fi * 7.3) * 0.10;
+            float orb = smoothstep(radius, 0.0, dist) * pulse * 0.18;
+            /* colour varies per orb: teal to blue-white */
+            vec3 oc = mix(vec3(0.10, 0.55, 0.80), vec3(0.55, 0.85, 1.00), hash(fi * 2.9));
+            glowColor += oc * orb;
+            glow += orb;
+          }
+
+          /* rain colour */
+          vec3 tipColor  = vec3(0.75, 0.92, 1.00);
+          vec3 bodyColor = vec3(0.12, 0.40, 0.60);
+          vec3 lineColor = mix(bodyColor, tipColor, pow(drop, 0.4));
 
           /* vignette */
           vec2 vig = uv - 0.5;
           float vignette = 1.0 - dot(vig * vec2(1.0, 1.3), vig * vec2(1.0, 1.3)) * 2.0;
           vignette = clamp(vignette, 0.0, 1.0);
 
-          float alpha = pattern * 0.55 * vignette;
-          gl_FragColor = vec4(lineColor, alpha);
+          float rainAlpha = pattern * 0.45 * vignette;
+          vec4 rainOut = vec4(lineColor, rainAlpha);
+          vec4 glowOut = vec4(glowColor, glow * vignette);
+
+          /* additive blend: glow sits on top of rain */
+          gl_FragColor = rainOut + glowOut;
         }
       `;
 
